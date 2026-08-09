@@ -579,6 +579,24 @@ export function saveCategorySubmission(
   const updated = [newRecord, ...current];
   localStorage.setItem(`tdc_category_submissions_${submission.year}`, JSON.stringify(updated));
 
+  // Sync to Supabase category_submissions table if available
+  if (isSupabaseConfigured && supabase) {
+    supabase.from('category_submissions').upsert({
+      id: newRecord.id,
+      year: newRecord.year,
+      month: newRecord.month,
+      category_key: newRecord.category_key,
+      category_name: newRecord.category_name,
+      status: newRecord.status,
+      reporter_name: newRecord.reporter_name,
+      reporter_id: newRecord.reporter_id,
+      data: newRecord.data,
+      created_at: newRecord.created_at,
+    }).then(({ error }) => {
+      if (error) console.warn('Supabase category submission error:', error);
+    });
+  }
+
   // Also merge into local report data
   saveLocalReport(
     submission.year,
