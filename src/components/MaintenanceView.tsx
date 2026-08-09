@@ -52,7 +52,7 @@ const DEFAULT_TASKS: MaintenanceTask[] = [
     equipment: 'In-line pH Meter',
     taskName: 'ล้างหัว probe',
     cycleDays: 7,
-    lastDoneDate: '2026-07-13',
+    lastDoneDate: '',
     status: 'approved',
   },
   {
@@ -419,12 +419,40 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({ currentUser })
     setTasks((prev) =>
       prev.map((t) => (t.id === id ? { ...t, lastDoneDate: dateStr } : t))
     );
+    const target = tasks.find((t) => t.id === id);
+    if (target && isSupabaseConfigured && supabase) {
+      supabase.from('maintenance_tasks').upsert({
+        id: target.id,
+        equipment: target.equipment,
+        task_name: target.taskName,
+        cycle_days: target.cycleDays,
+        last_done_date: dateStr,
+        reporter_name: target.reporterName || '',
+        status: target.status || 'approved',
+      }).then(({ error }) => {
+        if (error) console.warn('Supabase PM date change error:', error);
+      });
+    }
   };
 
   const handleResetDate = (id: string) => {
     setTasks((prev) =>
       prev.map((t) => (t.id === id ? { ...t, lastDoneDate: '', status: undefined } : t))
     );
+    const target = tasks.find((t) => t.id === id);
+    if (target && isSupabaseConfigured && supabase) {
+      supabase.from('maintenance_tasks').upsert({
+        id: target.id,
+        equipment: target.equipment,
+        task_name: target.taskName,
+        cycle_days: target.cycleDays,
+        last_done_date: '',
+        reporter_name: '',
+        status: 'approved',
+      }).then(({ error }) => {
+        if (error) console.warn('Supabase PM reset date error:', error);
+      });
+    }
     triggerNotify('รีเซ็ตวันที่สำเร็จ');
   };
 
