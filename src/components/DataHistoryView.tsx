@@ -29,7 +29,7 @@ import {
 import { FullMonthlyReportData, CategorySubmission, ReportData, UserRole } from '@/lib/types';
 import { calculateMetrics, MONTH_NAMES_TH } from '@/lib/calculations';
 import { exportMonthlyReportsToExcel } from '@/lib/excelExport';
-import { getCategorySubmissions, saveLocalReport } from '@/lib/supabase';
+import { getCategorySubmissions, saveLocalReport, deleteCategorySubmission, deleteMonthlyReport } from '@/lib/supabase';
 import { DataEntryForm } from './DataEntryForm';
 
 interface RenderCategoryFormFieldsProps {
@@ -344,17 +344,14 @@ export const DataHistoryView: React.FC<DataHistoryViewProps> = ({
   const [viewModalItem, setViewModalItem] = useState<any | null>(null);
   const [editModalItem, setEditModalItem] = useState<any | null>(null);
 
-  const handleDeleteItem = (item: any) => {
+  const handleDeleteItem = async (item: any) => {
     if (!window.confirm(`คุณต้องการลบข้อมูลรายการนี้ (วันที่ ${item.report_date || item.month}) ใช่หรือไม่?`)) {
       return;
     }
-    const storedSubmissionsStr = localStorage.getItem(`tdc_category_submissions_${selectedYear}`);
-    if (storedSubmissionsStr) {
-      try {
-        const subs: CategorySubmission[] = JSON.parse(storedSubmissionsStr);
-        const updated = subs.filter((s) => s.id !== item.id);
-        localStorage.setItem(`tdc_category_submissions_${selectedYear}`, JSON.stringify(updated));
-      } catch {}
+    if (item.id.startsWith('sub-')) {
+      await deleteCategorySubmission(item.id);
+    } else {
+      await deleteMonthlyReport(item.id);
     }
     window.location.reload();
   };

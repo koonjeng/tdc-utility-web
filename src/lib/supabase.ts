@@ -578,3 +578,43 @@ export async function updateCategorySubmissionStatus(
     }
   }
 }
+
+export async function deleteCategorySubmission(id: string): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      // 1. Delete from category_submissions
+      const { error: cErr } = await supabase.from('category_submissions').delete().eq('id', id);
+      if (cErr) {
+        console.error('Delete category_submission error:', cErr);
+        alert(`Supabase Delete Error: ${cErr.message}`);
+        return false;
+      }
+      return true;
+    } catch (e: any) {
+      console.error('Delete category_submission exception:', e);
+      alert(`Delete Exception: ${e?.message || e}`);
+      return false;
+    }
+  }
+  return false;
+}
+
+export async function deleteMonthlyReport(reportId: string): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      await supabase.from('report_data').delete().eq('report_id', reportId);
+      const { error } = await supabase.from('monthly_reports').delete().eq('id', reportId);
+      if (error) {
+        console.error('Delete monthly_report error:', error);
+        alert(`Supabase Delete Report Error: ${error.message}`);
+        return false;
+      }
+      return true;
+    } catch (e: any) {
+      console.error('Delete monthly_report exception:', e);
+      alert(`Delete Exception: ${e?.message || e}`);
+      return false;
+    }
+  }
+  return false;
+}
