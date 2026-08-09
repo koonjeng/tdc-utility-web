@@ -162,7 +162,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({ currentUser })
       if (!isSupabaseConfigured || !supabase) return;
       try {
         const { data: dbTasks, error: tErr } = await supabase.from('maintenance_tasks').select('*');
-        if (!tErr && dbTasks && dbTasks.length > 0) {
+        if (!tErr && dbTasks && dbTasks.length >= DEFAULT_TASKS.length) {
           setTasks(
             dbTasks.map((t: any) => ({
               id: t.id,
@@ -174,8 +174,8 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({ currentUser })
               status: t.status,
             }))
           );
-        } else if (!tErr && dbTasks && dbTasks.length === 0) {
-          // Auto-seed DEFAULT_TASKS to Supabase when table is clean/empty
+        } else {
+          // Auto-seed / Upsert ALL DEFAULT_TASKS to Supabase to guarantee all 14 items exist
           const seedPayload = DEFAULT_TASKS.map((t) => ({
             id: t.id,
             equipment: t.equipment,
@@ -185,7 +185,21 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({ currentUser })
             reporter_name: t.reporterName || '',
             status: t.status || 'approved',
           }));
-          await supabase.from('maintenance_tasks').insert(seedPayload);
+          await supabase.from('maintenance_tasks').upsert(seedPayload, { onConflict: 'id' });
+          const { data: freshTasks } = await supabase.from('maintenance_tasks').select('*');
+          if (freshTasks && freshTasks.length > 0) {
+            setTasks(
+              freshTasks.map((t: any) => ({
+                id: t.id,
+                equipment: t.equipment,
+                taskName: t.task_name,
+                cycleDays: t.cycle_days,
+                lastDoneDate: t.last_done_date,
+                reporterName: t.reporter_name,
+                status: t.status,
+              }))
+            );
+          }
         }
 
         const { data: dbHist, error: hErr } = await supabase.from('maintenance_history').select('*').order('created_at', { ascending: false });
