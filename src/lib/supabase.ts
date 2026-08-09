@@ -269,7 +269,7 @@ export async function signInUser(email: string, password: string): Promise<{ ema
         let userRole: UserRole = 'approver';
         if (profile?.role) {
           userRole = profile.role as UserRole;
-        } else if (email.toLowerCase().includes('admin') || email.toLowerCase() === 'admin@tdc.com' || email.toLowerCase() === 'koonjeng.pongpisut@gmail.com') {
+        } else if (email.toLowerCase().includes('admin') || email.toLowerCase() === 'admin@tdc.com') {
           userRole = 'admin';
         }
 
@@ -295,7 +295,7 @@ export async function signInUser(email: string, password: string): Promise<{ ema
 
   let autoRole: UserRole = matched ? matched.role : 'approver';
   const lowerEmail = email.toLowerCase();
-  if (lowerEmail.includes('admin') || lowerEmail === 'koonjeng.pongpisut@gmail.com') {
+  if (lowerEmail.includes('admin') || lowerEmail === 'admin@tdc.com') {
     autoRole = 'admin';
   }
 
