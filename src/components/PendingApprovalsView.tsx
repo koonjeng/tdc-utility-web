@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Clock,
   BadgeCheck,
@@ -38,9 +38,15 @@ export const PendingApprovalsView: React.FC<PendingApprovalsViewProps> = ({
   onRejectReport,
   onInspectReport,
 }) => {
-  const [categorySubmissions, setCategorySubmissions] = useState<CategorySubmission[]>(() => {
-    return getCategorySubmissions(selectedYear);
-  });
+  const [categorySubmissions, setCategorySubmissions] = useState<CategorySubmission[]>([]);
+
+  useEffect(() => {
+    async function loadSubs() {
+      const subs = await getCategorySubmissions(selectedYear);
+      setCategorySubmissions(subs);
+    }
+    loadSubs();
+  }, [selectedYear]);
 
   const [maintRecords, setMaintRecords] = useState<MaintenanceHistoryRecord[]>(() => {
     if (typeof window === 'undefined') return [];
@@ -114,20 +120,21 @@ export const PendingApprovalsView: React.FC<PendingApprovalsViewProps> = ({
     setRejectModalOpen(true);
   };
 
-  const handleConfirmReject = () => {
+  const handleConfirmReject = async () => {
     if (!targetSubmissionId) return;
     if (!rejectReasonInput.trim()) {
       alert('กรุณาระบุเหตุผลการตีกลับ');
       return;
     }
-    const updated = updateCategorySubmissionStatus(selectedYear, targetSubmissionId, 'rejected', rejectReasonInput);
-    setCategorySubmissions([...updated]);
+    await updateCategorySubmissionStatus(selectedYear, targetSubmissionId, 'rejected', rejectReasonInput);
+    const updated = await getCategorySubmissions(selectedYear);
+    setCategorySubmissions(updated);
     setRejectModalOpen(false);
     setTargetSubmissionId(null);
     triggerNotify('ตีกลับหมวดนี้เรียบร้อยแล้ว');
   };
 
-  const handleApproveSubmission = (id: string, month: number) => {
+  const handleApproveSubmission = async (id: string, month: number) => {
     let approverName = currentUser?.email || 'Approver';
     if (currentUser?.email) {
       try {
@@ -136,8 +143,9 @@ export const PendingApprovalsView: React.FC<PendingApprovalsViewProps> = ({
       } catch {}
     }
 
-    const updated = updateCategorySubmissionStatus(selectedYear, id, 'approved', undefined, approverName);
-    setCategorySubmissions([...updated]);
+    await updateCategorySubmissionStatus(selectedYear, id, 'approved', undefined, approverName);
+    const updated = await getCategorySubmissions(selectedYear);
+    setCategorySubmissions(updated);
     onApproveReport(month);
     triggerNotify('อนุมัติหมวดนี้เรียบร้อยแล้ว');
     setTimeout(() => window.location.reload(), 1200);

@@ -496,30 +496,85 @@ export function saveLocalReport(
   return Array.from({ length: 12 }, (_, i) => getEmptyReportObject(year, i + 1));
 }
 
-export function getCategorySubmissions(year: number): CategorySubmission[] {
-  return [];
-}
-
-export function saveCategorySubmission(
-  submission: Omit<CategorySubmission, 'id' | 'created_at'>
-): CategorySubmission[] {
+export async function getCategorySubmissions(year: number): Promise<CategorySubmission[]> {
   if (isSupabaseConfigured && supabase) {
-    saveReportData(
-      submission.year,
-      submission.month,
-      { status: submission.status, submitted_category: submission.category_name },
-      submission.data
-    );
+    try {
+      const { data, error } = await supabase
+        .from('category_submissions')
+        .select('*')
+        .eq('year', year)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        return data as CategorySubmission[];
+      }
+    } catch (e) {
+      console.warn('Failed to fetch category_submissions:', e);
+    }
   }
   return [];
 }
 
-export function updateCategorySubmissionStatus(
+export async function saveCategorySubmission(
+  submission: Omit<CategorySubmission, 'id' | 'created_at'>
+): Promise<void> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const subId = `sub-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+      const { error } = await supabase.from('category_submissions').insert({
+        id: subId,
+        year: submission.year,
+        month: submission.month,
+        report_date: submission.report_date,
+        category_key: submission.category_key,
+        category_name: submission.category_name,
+        status: submission.status,
+        reporter_name: submission.reporter_name,
+        reporter_id: submission.reporter_id || '',
+        approver_name: submission.approver_name || '',
+        reject_reason: submission.reject_reason || null,
+        data: submission.data,
+      });
+
+      if (error) {
+        console.error('Category submission insert error:', error);
+        alert(`Failed to save daily entry to Supabase: ${error.message}`);
+      } else {
+        console.log('Successfully saved daily submission to Supabase category_submissions!');
+        // Also update latest month report snapshot
+        await saveReportData(
+          submission.year,
+          submission.month,
+          { status: submission.status, submitted_category: submission.category_name },
+          submission.data
+        );
+      }
+    } catch (e: any) {
+      console.error('Category submission error:', e);
+      alert(`Save Exception: ${e?.message || e}`);
+    }
+  }
+}
+
+export async function updateCategorySubmissionStatus(
   year: number,
   id: string,
   status: 'approved' | 'rejected',
   rejectReason?: string,
   approverName?: string
-): CategorySubmission[] {
-  return [];
+): Promise<void> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      await supabase
+        .from('category_submissions')
+        .update({
+          status,
+          reject_reason: rejectReason || null,
+          approver_name: approverName || '',
+        })
+        .eq('id', id);
+    } catch (e) {
+      console.warn('Failed to update category submission status:', e);
+    }
+  }
 }

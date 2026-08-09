@@ -51,7 +51,7 @@ import {
   Tooltip,
   Legend,
 } from 'recharts';
-import { FullMonthlyReportData, ReportData } from '@/lib/types';
+import { FullMonthlyReportData, ReportData, CategorySubmission } from '@/lib/types';
 import { calculateMetrics, MONTH_NAMES_TH, MONTH_SHORT_TH } from '@/lib/calculations';
 import { getCategorySubmissions } from '@/lib/supabase';
 
@@ -257,18 +257,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     }
   };
 
-  // Fetch Live Category Submissions for Current Year & Previous/Comparison Year
-  const currentCategorySubmissions = useMemo(() => {
-    return getCategorySubmissions(selectedYear);
-  }, [selectedYear]);
+  const [currentCategorySubmissions, setCurrentCategorySubmissions] = useState<CategorySubmission[]>([]);
+  const [prevCategorySubmissions, setPrevCategorySubmissions] = useState<CategorySubmission[]>([]);
 
   const targetCompYear = useMemo(() => {
     return chartMode === 'yoy' ? yoyCompYear : selectedYear - 1;
   }, [chartMode, yoyCompYear, selectedYear]);
 
-  const prevCategorySubmissions = useMemo(() => {
-    return getCategorySubmissions(targetCompYear);
-  }, [targetCompYear]);
+  useEffect(() => {
+    async function loadDashSubs() {
+      const curr = await getCategorySubmissions(selectedYear);
+      const prev = await getCategorySubmissions(targetCompYear);
+      setCurrentCategorySubmissions(curr);
+      setPrevCategorySubmissions(prev);
+    }
+    loadDashSubs();
+  }, [selectedYear, targetCompYear]);
 
   // Derived Month Range Bounds from Selected Dates
   const startMonth = useMemo(() => {

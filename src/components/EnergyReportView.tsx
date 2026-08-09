@@ -117,125 +117,127 @@ export const EnergyReportView: React.FC<EnergyReportViewProps> = ({
 
   // Sync exact data from system (Monthly Reports + Category Submissions) filtered by date range or month
   useEffect(() => {
-    let mergedData: Partial<ReportData> = {};
+    async function syncEnergyData() {
+      let mergedData: Partial<ReportData> = {};
+      const catSubmissionsList = await getCategorySubmissions(selectedYear);
 
-    // 1. If date range is specified (startDate/endDate), fetch ALL matching submissions across months
-    if (startDate || endDate) {
-      const allSubs = getCategorySubmissions(selectedYear).filter((s) => {
-        if (s.status !== 'approved' && s.status !== 'pending') return false;
-        if (startDate && s.report_date && s.report_date < startDate) return false;
-        if (endDate && s.report_date && s.report_date > endDate) return false;
-        return true;
-      });
+      // 1. If date range is specified (startDate/endDate), fetch ALL matching submissions across months
+      if (startDate || endDate) {
+        const allSubs = catSubmissionsList.filter((s) => {
+          if (s.status !== 'approved' && s.status !== 'pending') return false;
+          if (startDate && s.report_date && s.report_date < startDate) return false;
+          if (endDate && s.report_date && s.report_date > endDate) return false;
+          return true;
+        });
 
-      let totalSludgeTons = 0;
-      let totalSludgeTrips = 0;
-      let totalSludgeCost = 0;
-      let totalFuelLiter = 0;
-      let totalFuelCost = 0;
+        let totalSludgeTons = 0;
+        let totalSludgeTrips = 0;
+        let totalSludgeCost = 0;
+        let totalFuelLiter = 0;
+        let totalFuelCost = 0;
 
-      // Map to aggregate entries by date string
-      const dateMap = new Map<string, { date: string; sludge: number; fuel: number; m1: number; m2: number; m3: number; solar1: number; solar2: number }>();
+        // Map to aggregate entries by date string
+        const dateMap = new Map<string, { date: string; sludge: number; fuel: number; m1: number; m2: number; m3: number; solar1: number; solar2: number }>();
 
-      allSubs.forEach((sub) => {
-        const subData = sub.data || {};
-        mergedData = { ...mergedData, ...subData };
+        allSubs.forEach((sub) => {
+          const subData = sub.data || {};
+          mergedData = { ...mergedData, ...subData };
 
-        const m1 = (Number(subData.elec_ms3_ms1_tf_on_peak) || 0) + (Number(subData.elec_ms3_ms1_tf_off_peak) || 0) || Number(subData.elec_meter1_ms1_ms3_tf) || 0;
-        const m2 = (Number(subData.elec_utl_on_peak) || 0) + (Number(subData.elec_utl_off_peak) || 0) || Number(subData.elec_meter2_utl) || 0;
-        const m3 = (Number(subData.elec_ms2_mix_on_peak) || 0) + (Number(subData.elec_ms2_mix_off_peak) || 0) || Number(subData.elec_meter3_ms2_mix) || 0;
+          const m1 = (Number(subData.elec_ms3_ms1_tf_on_peak) || 0) + (Number(subData.elec_ms3_ms1_tf_off_peak) || 0) || Number(subData.elec_meter1_ms1_ms3_tf) || 0;
+          const m2 = (Number(subData.elec_utl_on_peak) || 0) + (Number(subData.elec_utl_off_peak) || 0) || Number(subData.elec_meter2_utl) || 0;
+          const m3 = (Number(subData.elec_ms2_mix_on_peak) || 0) + (Number(subData.elec_ms2_mix_off_peak) || 0) || Number(subData.elec_meter3_ms2_mix) || 0;
 
-        const solar1 = Number(subData.solar_meter1_ms2) || 0;
-        const solar2 = Number(subData.solar_meter2_tf) || 0;
+          const solar1 = Number(subData.solar_meter1_ms2) || 0;
+          const solar2 = Number(subData.solar_meter2_tf) || 0;
 
-        const sludge = (Number(subData.sludge_tons) || 0) + (Number(subData.sludge_vac_tons) || 0);
-        const fuel = (Number(subData.fuel_oil_a_ms1_liter) || 0) + (Number(subData.fuel_oil_a_ms2_liter) || 0) + (Number(subData.fuel_oil_a_ms3_liter) || 0) || Number(subData.fuel_oil_a_total_liter) || Number(subData.fuel_oil_a_liter) || 0;
-        const fuelBaht = Number(subData.fuel_oil_a_baht) || 0;
-        const sludgeBaht = Number(subData.sludge_grand_total_baht) || Number(subData.sludge_total_baht) || 0;
-        const sludgeTrips = Number(subData.sludge_trips) || 0;
+          const sludge = (Number(subData.sludge_tons) || 0) + (Number(subData.sludge_vac_tons) || 0);
+          const fuel = (Number(subData.fuel_oil_a_ms1_liter) || 0) + (Number(subData.fuel_oil_a_ms2_liter) || 0) + (Number(subData.fuel_oil_a_ms3_liter) || 0) || Number(subData.fuel_oil_a_total_liter) || Number(subData.fuel_oil_a_liter) || 0;
+          const fuelBaht = Number(subData.fuel_oil_a_baht) || 0;
+          const sludgeBaht = Number(subData.sludge_grand_total_baht) || Number(subData.sludge_total_baht) || 0;
+          const sludgeTrips = Number(subData.sludge_trips) || 0;
 
-        totalSludgeTons += sludge;
-        totalSludgeTrips += sludgeTrips;
-        totalSludgeCost += sludgeBaht;
-        totalFuelLiter += fuel;
-        totalFuelCost += fuelBaht;
+          totalSludgeTons += sludge;
+          totalSludgeTrips += sludgeTrips;
+          totalSludgeCost += sludgeBaht;
+          totalFuelLiter += fuel;
+          totalFuelCost += fuelBaht;
 
-        const dateStr = sub.report_date ? sub.report_date.split('-').reverse().join('/') : `1 ${MONTH_SHORT_TH[sub.month - 1]}`;
+          const dateStr = sub.report_date ? sub.report_date.split('-').reverse().join('/') : `1 ${MONTH_SHORT_TH[sub.month - 1]}`;
 
-        if (dateMap.has(dateStr)) {
-          const existing = dateMap.get(dateStr)!;
-          existing.sludge += sludge;
-          existing.fuel += fuel;
-          existing.m1 += m1;
-          existing.m2 += m2;
-          existing.m3 += m3;
-          existing.solar1 += solar1;
-          existing.solar2 += solar2;
+          if (dateMap.has(dateStr)) {
+            const existing = dateMap.get(dateStr)!;
+            existing.sludge += sludge;
+            existing.fuel += fuel;
+            existing.m1 += m1;
+            existing.m2 += m2;
+            existing.m3 += m3;
+            existing.solar1 += solar1;
+            existing.solar2 += solar2;
+          } else {
+            dateMap.set(dateStr, {
+              date: dateStr,
+              sludge,
+              fuel,
+              m1,
+              m2,
+              m3,
+              solar1,
+              solar2,
+            });
+          }
+        });
+
+        const dailyList = Array.from(dateMap.values());
+
+        if (dailyList.length > 0) {
+          setDailyRows(dailyList);
         } else {
-          dateMap.set(dateStr, {
-            date: dateStr,
-            sludge,
-            fuel,
-            m1,
-            m2,
-            m3,
-            solar1,
-            solar2,
-          });
+          setDailyRows([
+            {
+              date: startDate && endDate ? `${startDate.split('-').reverse().join('/')} – ${endDate.split('-').reverse().join('/')}` : 'ช่วงวันที่เลือก',
+              sludge: totalSludgeTons,
+              fuel: totalFuelLiter,
+              m1: Number(mergedData.elec_meter1_ms1_ms3_tf) || 0,
+              m2: Number(mergedData.elec_meter2_utl) || 0,
+              m3: Number(mergedData.elec_meter3_ms2_mix) || 0,
+              solar1: Number(mergedData.solar_meter1_ms2) || 0,
+              solar2: Number(mergedData.solar_meter2_tf) || 0,
+            },
+          ]);
         }
-      });
 
-      const dailyList = Array.from(dateMap.values());
+        setFuelLiter(totalFuelLiter);
+        setFuelCost(totalFuelCost);
 
-      if (dailyList.length > 0) {
-        setDailyRows(dailyList);
-      } else {
-        setDailyRows([
+        setOpsRows([
           {
-            date: startDate && endDate ? `${startDate.split('-').reverse().join('/')} – ${endDate.split('-').reverse().join('/')}` : 'ช่วงวันที่เลือก',
-            sludge: totalSludgeTons,
-            fuel: totalFuelLiter,
-            m1: Number(mergedData.elec_meter1_ms1_ms3_tf) || 0,
-            m2: Number(mergedData.elec_meter2_utl) || 0,
-            m3: Number(mergedData.elec_meter3_ms2_mix) || 0,
-            solar1: Number(mergedData.solar_meter1_ms2) || 0,
-            solar2: Number(mergedData.solar_meter2_tf) || 0,
+            dateRange: startDate && endDate ? `${startDate.split('-').reverse().join('/')} – ${endDate.split('-').reverse().join('/')}` : 'ช่วงวันที่เลือก',
+            title: mergedData.sludge_removal_desc || 'กำจัดตะกอน',
+            trips: totalSludgeTrips,
+            tons: totalSludgeTons,
+            cost: totalSludgeCost,
           },
         ]);
-      }
+      } else {
+        // 2. Default: Get base report data for selected month
+        const reportObj = reportsData.find((r) => r.report.month === selectedMonth);
+        mergedData = { ...(reportObj?.data || {}) };
 
-      setFuelLiter(totalFuelLiter);
-      setFuelCost(totalFuelCost);
-
-      setOpsRows([
-        {
-          dateRange: startDate && endDate ? `${startDate.split('-').reverse().join('/')} – ${endDate.split('-').reverse().join('/')}` : 'ช่วงวันที่เลือก',
-          title: mergedData.sludge_removal_desc || 'กำจัดตะกอน',
-          trips: totalSludgeTrips,
-          tons: totalSludgeTons,
-          cost: totalSludgeCost,
-        },
-      ]);
-    } else {
-      // 2. Default: Get base report data for selected month
-      const reportObj = reportsData.find((r) => r.report.month === selectedMonth);
-      mergedData = { ...(reportObj?.data || {}) };
-
-      // Helper to check if submission belongs to selectedMonth
-      const isSelectedMonthSub = (s: any) => {
-        if (s.month === selectedMonth) return true;
-        if (s.report_date) {
-          const parts = s.report_date.split('-');
-          if (parts.length === 3 && parseInt(parts[1], 10) === selectedMonth) {
-            return true;
+        // Helper to check if submission belongs to selectedMonth
+        const isSelectedMonthSub = (s: any) => {
+          if (s.month === selectedMonth) return true;
+          if (s.report_date) {
+            const parts = s.report_date.split('-');
+            if (parts.length === 3 && parseInt(parts[1], 10) === selectedMonth) {
+              return true;
+            }
           }
-        }
-        return false;
-      };
+          return false;
+        };
 
-      const catSubs = getCategorySubmissions(selectedYear).filter(
-        (s) => isSelectedMonthSub(s) && (s.status === 'approved' || s.status === 'pending')
-      );
+        const catSubs = catSubmissionsList.filter(
+          (s) => isSelectedMonthSub(s) && (s.status === 'approved' || s.status === 'pending')
+        );
 
       let totalSludgeTons = 0;
       let totalSludgeTrips = 0;
@@ -356,7 +358,8 @@ export const EnergyReportView: React.FC<EnergyReportViewProps> = ({
       return false;
     };
 
-    const prevCatSubs = getCategorySubmissions(prevYear).filter(
+    const prevCatSubsList = await getCategorySubmissions(prevYear);
+    const prevCatSubs = prevCatSubsList.filter(
       (s) => (startDate || endDate ? true : isSelectedMonthSubPrev(s)) && (s.status === 'approved' || s.status === 'pending')
     );
     let prevMergedData: Partial<ReportData> = {};
@@ -388,6 +391,8 @@ export const EnergyReportView: React.FC<EnergyReportViewProps> = ({
       { name: 'โซลาร์ MS2', v1: solar1Prev, v2: solar1Cur },
       { name: 'โซลาร์ TF', v1: solar2Prev, v2: solar2Cur },
     ]);
+    }
+    syncEnergyData();
   }, [selectedMonth, reportsData, selectedYear, startDate, endDate]);
 
   // Dynamic Calculations

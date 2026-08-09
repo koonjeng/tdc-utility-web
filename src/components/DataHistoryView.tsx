@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Search,
   Filter,
@@ -393,7 +393,17 @@ export const DataHistoryView: React.FC<DataHistoryViewProps> = ({
     window.location.reload();
   };
 
-  // Combine monthly reports
+  const [categorySubmissions, setCategorySubmissions] = useState<CategorySubmission[]>([]);
+
+  useEffect(() => {
+    async function loadCategorySubs() {
+      const subs = await getCategorySubmissions(selectedYear);
+      setCategorySubmissions(subs);
+    }
+    loadCategorySubs();
+  }, [selectedYear]);
+
+  // Combine monthly reports and daily category submissions
   const allDisplayItems = useMemo(() => {
     const items: Array<{
       id: string;
@@ -406,7 +416,21 @@ export const DataHistoryView: React.FC<DataHistoryViewProps> = ({
       data: Partial<ReportData>;
     }> = [];
 
-    // Add monthly reports
+    // 1. Add daily category submissions
+    categorySubmissions.forEach((sub) => {
+      items.push({
+        id: sub.id,
+        month: sub.month,
+        report_date: sub.report_date,
+        status: sub.status,
+        reporter_name: sub.reporter_name,
+        approver_name: sub.approver_name || (sub.data as any)?.approver_name,
+        category_key: sub.category_key,
+        data: sub.data,
+      });
+    });
+
+    // 2. Add monthly reports
     reportsData.forEach((r) => {
       if (r.report.status !== 'empty') {
         items.push({
@@ -422,7 +446,7 @@ export const DataHistoryView: React.FC<DataHistoryViewProps> = ({
     });
 
     return items;
-  }, [reportsData]);
+  }, [reportsData, categorySubmissions]);
 
   // Helper to check category data content
   const hasCategoryContent = (data: Partial<ReportData>, catKey: string): boolean => {
