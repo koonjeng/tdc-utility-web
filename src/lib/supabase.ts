@@ -3,10 +3,10 @@ import { MonthlyReport, ReportData, FullMonthlyReportData, UserRole, Profile, Au
 import csvImportData from './csvImportData.json';
 
 // Clean Supabase URL to strip accidental /rest/v1 or trailing slashes
-let rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+let rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://aoqdrwdtfrlycyihffnl.supabase.co';
 rawUrl = rawUrl.replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
 const supabaseUrl = rawUrl;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_jpzHGNX9RxT-eEfuwDLPUA__MSxiwaw';
 
 export const isSupabaseConfigured = Boolean(
   supabaseUrl && supabaseUrl.startsWith('http') && supabaseAnonKey
@@ -356,10 +356,12 @@ export async function saveReportData(
 ): Promise<FullMonthlyReportData[]> {
   if (isSupabaseConfigured && supabase) {
     try {
+      const reportId = `report-${year}-${month}`;
       const { data: reportRow, error: rError } = await supabase
         .from('monthly_reports')
         .upsert(
           {
+            id: reportId,
             year,
             month,
             status: reportPatch.status || 'draft',
