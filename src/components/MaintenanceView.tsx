@@ -174,6 +174,18 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({ currentUser })
               status: t.status,
             }))
           );
+        } else if (!tErr && dbTasks && dbTasks.length === 0) {
+          // Auto-seed DEFAULT_TASKS to Supabase when table is clean/empty
+          const seedPayload = DEFAULT_TASKS.map((t) => ({
+            id: t.id,
+            equipment: t.equipment,
+            task_name: t.taskName,
+            cycle_days: t.cycleDays,
+            last_done_date: t.lastDoneDate || '',
+            reporter_name: t.reporterName || '',
+            status: t.status || 'approved',
+          }));
+          await supabase.from('maintenance_tasks').insert(seedPayload);
         }
 
         const { data: dbHist, error: hErr } = await supabase.from('maintenance_history').select('*').order('created_at', { ascending: false });
