@@ -61,15 +61,11 @@ export const PendingApprovalsView: React.FC<PendingApprovalsViewProps> = ({
     return maintRecords.filter((m) => m.status === 'pending');
   }, [maintRecords]);
 
-  const pendingMonthlyReports = useMemo(() => {
-    return reportsData.filter((r) => r.report.status === 'pending');
-  }, [reportsData]);
-
   const pendingSubmissions = useMemo(() => {
     return categorySubmissions.filter((s) => s.status === 'pending');
   }, [categorySubmissions]);
 
-  const totalPendingCount = pendingSubmissions.length + pendingMaintRecords.length + pendingMonthlyReports.length;
+  const totalPendingCount = pendingSubmissions.length + pendingMaintRecords.length;
 
   const handleApproveMaintRecord = (record: MaintenanceHistoryRecord) => {
     // 1. Update status in history
@@ -107,6 +103,7 @@ export const PendingApprovalsView: React.FC<PendingApprovalsViewProps> = ({
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [targetSubmissionId, setTargetSubmissionId] = useState<string | null>(null);
   const [rejectReasonInput, setRejectReasonInput] = useState('');
+  const [viewModalSub, setViewModalSub] = useState<CategorySubmission | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
 
   const triggerNotify = (msg: string) => {
@@ -256,69 +253,7 @@ export const PendingApprovalsView: React.FC<PendingApprovalsViewProps> = ({
               </div>
             );
           })}
-          {pendingMonthlyReports.map((mReport) => {
-            const dateFormatted = mReport.data.report_date ? mReport.data.report_date.split('-').reverse().join('/') : '-';
-            const metrics = calculateMetrics(mReport.data);
 
-            return (
-              <div
-                key={mReport.report.id}
-                className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-all border-l-4 border-l-amber-500"
-              >
-                <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 font-black text-xs flex items-center justify-center shadow-xs">
-                      {MONTH_NAMES_TH[mReport.report.month - 1].substring(0, 3)}
-                    </div>
-                    <div>
-                      <h3 className="font-extrabold text-base text-white flex items-center gap-2">
-                        <span>รายงานประจำเดือน {MONTH_NAMES_TH[mReport.report.month - 1]} พ.ศ. {mReport.report.year}</span>
-                      </h3>
-                      <p className="text-xs text-slate-300 flex items-center gap-2 mt-0.5">
-                        <User className="w-3.5 h-3.5 text-amber-400" />
-                        <span>ผู้ส่งรายงาน: {mReport.data.reporter_name || 'ไม่ระบุชื่อ'}</span>
-                        <span>•</span>
-                        <Calendar className="w-3.5 h-3.5 text-amber-400" />
-                        <span>วันที่ลงข้อมูล: {dateFormatted}</span>
-                      </p>
-                    </div>
-                  </div>
-
-                  <span className="px-3 py-1 bg-amber-500/20 text-amber-300 rounded-full text-xs font-bold border border-amber-500/40 flex items-center gap-1.5 animate-pulse">
-                    <Clock className="w-3.5 h-3.5 text-amber-400" />
-                    <span>รออนุมัติ</span>
-                  </span>
-                </div>
-
-                <div className="p-5 bg-slate-50/60 border-b border-slate-100 flex items-center justify-between">
-                  <div className="space-y-1">
-                    <span className="text-xs text-slate-500 font-semibold">สรุปภาพรวม:</span>
-                    <p className="text-sm font-bold text-slate-800">
-                      ผลิตรวม {metrics.totalProductionTons.toLocaleString('th-TH')} ตัน | ใช้ไฟฟ้า {metrics.elecGrandTotalKwh.toLocaleString('th-TH')} kWh
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => onInspectReport(mReport.report.month)}
-                      className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
-                    >
-                      <FileText className="w-4 h-4" />
-                      <span>ตรวจดูข้อมูล</span>
-                    </button>
-
-                    <button
-                      onClick={() => onApproveReport(mReport.report.month)}
-                      className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md shadow-emerald-600/20 transition-all cursor-pointer flex items-center gap-1.5"
-                    >
-                      <BadgeCheck className="w-4 h-4" />
-                      <span>อนุมัติรายงาน</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
           {pendingSubmissions.map((sub) => {
             const dateFormatted = sub.report_date ? sub.report_date.split('-').reverse().join('/') : '-';
             const metrics = calculateMetrics(sub.data);
@@ -510,11 +445,11 @@ export const PendingApprovalsView: React.FC<PendingApprovalsViewProps> = ({
                 {/* ACTION BAR */}
                 <div className="px-6 py-4 bg-white flex flex-col sm:flex-row items-center justify-between gap-3">
                   <button
-                    onClick={() => onInspectReport(sub.month)}
-                    className="text-xs font-bold text-sky-600 hover:text-sky-700 flex items-center gap-1 hover:underline"
+                    onClick={() => setViewModalSub(sub)}
+                    className="text-xs font-bold text-sky-600 hover:text-sky-700 flex items-center gap-1.5 hover:underline cursor-pointer"
                   >
-                    <FileText className="w-4 h-4" />
-                    <span>ตรวจสอบฟอร์มฉบับเต็ม</span>
+                    <FileText className="w-4 h-4 text-sky-600" />
+                    <span>ตรวจสอบฟอร์มฉบับเต็ม (View Details)</span>
                     <ChevronRight className="w-3.5 h-3.5" />
                   </button>
 
@@ -573,6 +508,57 @@ export const PendingApprovalsView: React.FC<PendingApprovalsViewProps> = ({
                 className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-sm"
               >
                 ยืนยันการตีกลับ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* VIEW SUBMISSION DETAILS MODAL */}
+      {viewModalSub && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl space-y-5 border border-slate-200 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-sky-600 text-white font-black text-xs flex items-center justify-center shadow-md shadow-sky-600/20 uppercase">
+                  {viewModalSub.category_key}
+                </div>
+                <div>
+                  <h3 className="text-lg font-extrabold text-slate-900">{viewModalSub.category_name}</h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    วันที่ลงข้อมูล: {viewModalSub.report_date ? viewModalSub.report_date.split('-').reverse().join('/') : '-'} | ผู้ส่ง: {viewModalSub.reporter_name || 'ไม่ระบุชื่อ'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setViewModalSub(null)}
+                className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer transition-all"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">รายละเอียดฟอร์มฉบับเต็ม</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
+                {Object.entries(viewModalSub.data || {}).map(([key, val]) => {
+                  if (val === undefined || val === null || val === '') return null;
+                  return (
+                    <div key={key} className="bg-white p-3 rounded-xl border border-slate-100 shadow-xs">
+                      <span className="block text-[11px] font-semibold text-slate-500 uppercase">{key.replace(/_/g, ' ')}</span>
+                      <span className="block text-sm font-extrabold text-slate-900 mt-0.5">{String(val)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <button
+                onClick={() => setViewModalSub(null)}
+                className="px-5 py-2.5 bg-slate-900 text-white text-xs font-bold rounded-xl hover:bg-slate-800 cursor-pointer shadow-md transition-all"
+              >
+                ปิดหน้าต่าง
               </button>
             </div>
           </div>
