@@ -20,6 +20,7 @@ import { FullMonthlyReportData, UserRole, CategorySubmission } from '@/lib/types
 import { calculateMetrics, MONTH_NAMES_TH } from '@/lib/calculations';
 import { getCategorySubmissions, updateCategorySubmissionStatus } from '@/lib/supabase';
 import { MaintenanceHistoryRecord, MaintenanceTask } from './MaintenanceView';
+import { DataEntryForm } from './DataEntryForm';
 
 interface PendingApprovalsViewProps {
   selectedYear: number;
@@ -514,10 +515,10 @@ export const PendingApprovalsView: React.FC<PendingApprovalsViewProps> = ({
         </div>
       )}
 
-      {/* VIEW SUBMISSION DETAILS MODAL */}
+      {/* VIEW SUBMISSION DETAILS MODAL (FORM STYLE) */}
       {viewModalSub && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl space-y-5 border border-slate-200 animate-in fade-in zoom-in-95">
+        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl p-4 sm:p-6 max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl space-y-4 border border-slate-200 animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-sky-600 text-white font-black text-xs flex items-center justify-center shadow-md shadow-sky-600/20 uppercase">
@@ -538,25 +539,26 @@ export const PendingApprovalsView: React.FC<PendingApprovalsViewProps> = ({
               </button>
             </div>
 
-            <div className="space-y-4">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">รายละเอียดฟอร์มฉบับเต็ม</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
-                {Object.entries(viewModalSub.data || {}).map(([key, val]) => {
-                  if (val === undefined || val === null || val === '') return null;
-                  return (
-                    <div key={key} className="bg-white p-3 rounded-xl border border-slate-100 shadow-xs">
-                      <span className="block text-[11px] font-semibold text-slate-500 uppercase">{key.replace(/_/g, ' ')}</span>
-                      <span className="block text-sm font-extrabold text-slate-900 mt-0.5">{String(val)}</span>
-                    </div>
-                  );
-                })}
-              </div>
+            <div className="pointer-events-none opacity-95">
+              <DataEntryForm
+                selectedYear={viewModalSub.year}
+                selectedMonth={viewModalSub.month}
+                setSelectedMonth={() => {}}
+                reportsData={reportsData}
+                currentUser={currentUser}
+                onSaveDraft={() => {}}
+                onSubmitApproval={() => {}}
+                onApproveReport={() => {}}
+                onRejectReport={() => {}}
+                initialCategory={viewModalSub.category_key}
+                initialData={viewModalSub.data}
+              />
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
               <button
                 onClick={() => setViewModalSub(null)}
-                className="px-5 py-2.5 bg-slate-900 text-white text-xs font-bold rounded-xl hover:bg-slate-800 cursor-pointer shadow-md transition-all"
+                className="px-6 py-2.5 bg-slate-900 text-white text-xs font-bold rounded-xl hover:bg-slate-800 cursor-pointer shadow-md transition-all"
               >
                 ปิดหน้าต่าง
               </button>
