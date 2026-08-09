@@ -269,23 +269,14 @@ export async function signInUser(email: string, password: string): Promise<{ ema
         let userRole: UserRole = 'approver';
         if (profile?.role) {
           userRole = profile.role as UserRole;
-        } else if (email.includes('admin') || email === 'koonjeng.pongpisut@gmail.com') {
+        } else if (email.toLowerCase().includes('admin') || email.toLowerCase() === 'admin@tdc.com' || email.toLowerCase() === 'koonjeng.pongpisut@gmail.com') {
           userRole = 'admin';
         }
 
         return { email: authData.user.email || email, role: userRole };
       }
 
-      // Handle invalid credentials error with pure Thai text
-      if (authError) {
-        if (authError.message.includes('Invalid login credentials')) {
-          return { error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบใหม่อีกครั้ง' };
-        }
-        if (authError.message.includes('Email not confirmed')) {
-          return { error: 'กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ' };
-        }
-        return { error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบใหม่อีกครั้ง' };
-      }
+      // If Supabase Auth failed (e.g. user exists only in profiles table or local storage), fallback to profiles check
     } catch (err: any) {
       console.warn('Supabase login failed, using direct profile lookup:', err);
     }
