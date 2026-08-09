@@ -684,16 +684,6 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({
                 </p>
               </div>
             </div>
-
-            {(!isFormLocked || currentUser?.role === 'admin') && !isReadOnlyMode && (
-              <button
-                onClick={() => handleSaveCategory('cat1', 'หมวดที่ 1: ตะกอน (Sludge)')}
-                className="flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
-              >
-                <Save className="w-3.5 h-3.5" />
-                <span>บันทึกหมวดนี้</span>
-              </button>
-            )}
           </div>
 
           {/* MAIN SLUDGE REMOVAL FIELDS */}
