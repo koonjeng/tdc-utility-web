@@ -304,6 +304,8 @@ export async function signInUser(email: string, password: string): Promise<{ ema
 
 // Fetch monthly reports
 export async function fetchReportsData(year: number): Promise<FullMonthlyReportData[]> {
+  const localReports = getLocalReports(year);
+
   if (isSupabaseConfigured && supabase) {
     try {
       const { data: reports, error } = await supabase
@@ -318,6 +320,7 @@ export async function fetchReportsData(year: number): Promise<FullMonthlyReportD
         return Array.from({ length: 12 }, (_, i) => {
           const month = i + 1;
           const found = reports.find((r) => r.month === month);
+          const localItem = localReports.find((r) => r.report.month === month);
           if (found) {
             const rd = Array.isArray(found.report_data) ? found.report_data[0] : found.report_data;
             return {
@@ -328,25 +331,10 @@ export async function fetchReportsData(year: number): Promise<FullMonthlyReportD
                 status: found.status,
                 reject_reason: found.reject_reason,
               },
-              data: rd || {
-                report_id: found.id,
-                reporter_name: '',
-                reporter_id: '',
-                report_date: '',
-                production_cassava: 0,
-                production_modified: 0,
-                hours_cassava: 0,
-                hours_modified: 0,
-                electricity_kwh: 0,
-                electricity_baht: 0,
-                renewable_biogas_m3: 0,
-                renewable_solar_kwh: 0,
-                fuel_oil_a_liter: 0,
-                fuel_oil_a_baht: 0,
-              },
+              data: rd ? { ...localItem?.data, ...rd } : (localItem?.data || getEmptyReportObject(year, month).data),
             };
           }
-          return getEmptyReportObject(year, month);
+          return localItem || getEmptyReportObject(year, month);
         });
       }
     } catch (e) {
@@ -354,7 +342,7 @@ export async function fetchReportsData(year: number): Promise<FullMonthlyReportD
     }
   }
 
-  return getLocalReports(year);
+  return localReports;
 }
 
 // Save monthly report & data
