@@ -360,14 +360,14 @@ export const DataHistoryView: React.FC<DataHistoryViewProps> = ({
     if (!editModalItem) return;
     if (editModalItem.id.startsWith('sub-')) {
       await updateCategorySubmissionData(editModalItem.id, updatedData);
+    } else {
+      await saveReportData(
+        selectedYear,
+        editModalItem.month || 1,
+        { status: editModalItem.status || 'approved' },
+        updatedData
+      );
     }
-    
-    await saveReportData(
-      selectedYear,
-      editModalItem.month || 1,
-      { status: editModalItem.status || 'approved' },
-      updatedData
-    );
 
     setEditModalItem(null);
     window.location.reload();
