@@ -252,6 +252,10 @@ export async function changeUserPassword(currentPassword: string, newPassword: s
 
 // Real Auth & Role lookup function
 export async function signInUser(email: string, password: string): Promise<{ email: string; role: UserRole } | { error: string }> {
+  if (email.toLowerCase() === 'koonjeng.pongpisut@gmail.com') {
+    return { error: 'บัญชีนี้ถูกยกเลิกการใช้งานแล้ว' };
+  }
+
   if (isSupabaseConfigured && supabase) {
     try {
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
