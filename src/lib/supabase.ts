@@ -33,7 +33,7 @@ export function getLocalProfiles(): Profile[] {
     try {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    } catch {}
+    } catch { }
   }
   localStorage.setItem(PROFILES_STORAGE_KEY, JSON.stringify(INITIAL_PROFILES));
   return INITIAL_PROFILES;
@@ -122,7 +122,7 @@ export function getLocalAuditLogs(): AuditLog[] {
   if (stored) {
     try {
       return JSON.parse(stored);
-    } catch {}
+    } catch { }
   }
   return [];
 }
@@ -143,7 +143,7 @@ export async function fetchUserProfiles(): Promise<Profile[]> {
 
   const localProfiles = getLocalProfiles();
   const mergedMap = new Map<string, Profile>();
-  
+
   // Merge initial admin, local profiles and Supabase profiles seamlessly
   INITIAL_PROFILES.forEach((p) => mergedMap.set(p.email.toLowerCase(), p));
   localProfiles.forEach((p) => mergedMap.set(p.email.toLowerCase(), p));
@@ -170,7 +170,7 @@ export async function createUserAccount(email: string, password: string, role: U
           email,
           role,
         }, { onConflict: 'id' });
-        
+
         if (pErr) {
           console.warn('Supabase profile upsert warning:', pErr);
         }
@@ -509,7 +509,7 @@ export function getLocalReports(year: number): FullMonthlyReportData[] {
   if (stored) {
     try {
       return JSON.parse(stored);
-    } catch {}
+    } catch { }
   }
 
   // Pure clean empty state for all 12 months ready for real production entry!
@@ -558,9 +558,9 @@ export function getCategorySubmissions(year: number): CategorySubmission[] {
     try {
       const parsed: CategorySubmission[] = JSON.parse(stored);
       if (Array.isArray(parsed)) return parsed;
-    } catch {}
+    } catch { }
   }
-  
+
   const baseData = (csvImportData as any)[year] || [];
   localStorage.setItem(`tdc_category_submissions_${year}`, JSON.stringify(baseData));
   return baseData;

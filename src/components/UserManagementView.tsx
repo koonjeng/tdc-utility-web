@@ -155,11 +155,10 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
       {/* Toast Notification */}
       {notification && (
         <div
-          className={`fixed top-20 right-8 z-50 px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 border animate-bounce ${
-            notification.type === 'success'
+          className={`fixed top-20 right-8 z-50 px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 border animate-bounce ${notification.type === 'success'
               ? 'bg-slate-900 text-white border-emerald-500/50'
               : 'bg-rose-900 text-white border-rose-500/50'
-          }`}
+            }`}
         >
           {notification.type === 'success' ? (
             <CheckCircle2 className="w-5 h-5 text-emerald-400" />
@@ -188,22 +187,20 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
         <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200">
           <button
             onClick={() => setActiveSubTab('users')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              activeSubTab === 'users'
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${activeSubTab === 'users'
                 ? 'bg-white text-slate-900 shadow-sm'
                 : 'text-slate-500 hover:text-slate-800'
-            }`}
+              }`}
           >
             <Users className="w-3.5 h-3.5" />
             <span>รายชื่อผู้ใช้ ({profiles.length})</span>
           </button>
           <button
             onClick={() => setActiveSubTab('audit-logs')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              activeSubTab === 'audit-logs'
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${activeSubTab === 'audit-logs'
                 ? 'bg-white text-sky-600 shadow-sm'
                 : 'text-slate-500 hover:text-slate-800'
-            }`}
+              }`}
           >
             <Activity className="w-3.5 h-3.5 text-sky-600" />
             <span>ประวัติการอนุมัติ (Audit Logs)</span>
@@ -302,11 +299,10 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ currentU
                             <select
                               value={user.role}
                               onChange={(e) => handleRoleChange(user.id, user.email, e.target.value as UserRole)}
-                              className={`px-2.5 py-1 rounded-lg text-xs font-extrabold border focus:outline-none cursor-pointer ${
-                                user.role === 'admin'
+                              className={`px-2.5 py-1 rounded-lg text-xs font-extrabold border focus:outline-none cursor-pointer ${user.role === 'admin'
                                   ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
                                   : 'bg-purple-50 text-purple-700 border-purple-300'
-                              }`}
+                                }`}
                             >
                               <option value="approver">Approver (ผู้อนุมัติ)</option>
                               <option value="admin">Admin (ผู้ดูแลระบบ)</option>

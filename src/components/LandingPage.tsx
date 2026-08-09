@@ -14,7 +14,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onContinueAsReporter,
   onLoginSuccess,
 }) => {
-  const [email, setEmail] = useState('admin@tdc.com');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -130,7 +130,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@tdc.com"
+                placeholder="name@example.com"
                 className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-950 text-slate-800 font-medium"
               />
             </div>
