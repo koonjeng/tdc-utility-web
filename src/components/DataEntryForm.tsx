@@ -371,7 +371,9 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({
 
     onSubmitApproval(selectedMonth, catPatch);
     triggerNotify(`ส่งคำขออนุมัติ ${categoryName} เรียบร้อยแล้ว!`);
-    setTimeout(() => window.location.reload(), 1200);
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
   };
 
   const handleSubmitClick = () => {
@@ -591,7 +593,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({
       {/* 5 CATEGORY SELECTION HUB TABS */}
       {!isHideCategoryTabs && (
         <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider px-2 pb-2">
+          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-1 pb-2">
             เลือกหมวดข้อมูลที่ต้องการกรอก (Select Category)
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
