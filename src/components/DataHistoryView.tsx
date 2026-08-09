@@ -29,7 +29,7 @@ import {
 import { FullMonthlyReportData, CategorySubmission, ReportData, UserRole } from '@/lib/types';
 import { calculateMetrics, MONTH_NAMES_TH } from '@/lib/calculations';
 import { exportMonthlyReportsToExcel } from '@/lib/excelExport';
-import { getCategorySubmissions, saveLocalReport, deleteCategorySubmission, deleteMonthlyReport } from '@/lib/supabase';
+import { getCategorySubmissions, saveReportData, deleteCategorySubmission, deleteMonthlyReport, updateCategorySubmissionData } from '@/lib/supabase';
 import { DataEntryForm } from './DataEntryForm';
 
 interface RenderCategoryFormFieldsProps {
@@ -356,30 +356,13 @@ export const DataHistoryView: React.FC<DataHistoryViewProps> = ({
     window.location.reload();
   };
 
-  const handleSaveEditWithData = (updatedData: Partial<ReportData>) => {
+  const handleSaveEditWithData = async (updatedData: Partial<ReportData>) => {
     if (!editModalItem) return;
-    const storedSubmissionsStr = localStorage.getItem(`tdc_category_submissions_${selectedYear}`);
-    if (storedSubmissionsStr) {
-      try {
-        const subs: CategorySubmission[] = JSON.parse(storedSubmissionsStr);
-        const updated = subs.map((s) => {
-          if (s.id === editModalItem.id) {
-            return {
-              ...s,
-              data: {
-                ...s.data,
-                ...updatedData,
-              },
-            };
-          }
-          return s;
-        });
-        localStorage.setItem(`tdc_category_submissions_${selectedYear}`, JSON.stringify(updated));
-      } catch {}
+    if (editModalItem.id.startsWith('sub-')) {
+      await updateCategorySubmissionData(editModalItem.id, updatedData);
     }
-
-    // Sync the edited data to the monthly report data store as well
-    saveLocalReport(
+    
+    await saveReportData(
       selectedYear,
       editModalItem.month || 1,
       { status: editModalItem.status || 'approved' },

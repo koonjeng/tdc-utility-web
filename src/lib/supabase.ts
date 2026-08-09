@@ -618,3 +618,33 @@ export async function deleteMonthlyReport(reportId: string): Promise<boolean> {
   }
   return false;
 }
+
+export async function updateCategorySubmissionData(
+  id: string,
+  updatedData: Partial<ReportData>
+): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data: subRow } = await supabase.from('category_submissions').select('data').eq('id', id).single();
+      const currentSubData = subRow?.data || {};
+      const newSubData = { ...currentSubData, ...updatedData };
+
+      const { error } = await supabase
+        .from('category_submissions')
+        .update({ data: newSubData })
+        .eq('id', id);
+
+      if (error) {
+        console.error('Update category_submission data error:', error);
+        alert(`Supabase Edit Error: ${error.message}`);
+        return false;
+      }
+      return true;
+    } catch (e: any) {
+      console.error('Update category_submission data exception:', e);
+      alert(`Edit Exception: ${e?.message || e}`);
+      return false;
+    }
+  }
+  return false;
+}
