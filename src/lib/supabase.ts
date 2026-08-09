@@ -302,10 +302,8 @@ export async function signInUser(email: string, password: string): Promise<{ ema
   return { email, role: autoRole };
 }
 
-// Fetch monthly reports
+// Fetch monthly reports - Direct Supabase Only
 export async function fetchReportsData(year: number): Promise<FullMonthlyReportData[]> {
-  const localReports = getLocalReports(year);
-
   if (isSupabaseConfigured && supabase) {
     try {
       const { data: reports, error } = await supabase
@@ -320,7 +318,6 @@ export async function fetchReportsData(year: number): Promise<FullMonthlyReportD
         return Array.from({ length: 12 }, (_, i) => {
           const month = i + 1;
           const found = reports.find((r) => r.month === month);
-          const localItem = localReports.find((r) => r.report.month === month);
           if (found) {
             const rd = Array.isArray(found.report_data) ? found.report_data[0] : found.report_data;
             return {
@@ -331,18 +328,19 @@ export async function fetchReportsData(year: number): Promise<FullMonthlyReportD
                 status: found.status,
                 reject_reason: found.reject_reason,
               },
-              data: rd ? { ...localItem?.data, ...rd } : (localItem?.data || getEmptyReportObject(year, month).data),
+              data: rd || getEmptyReportObject(year, month).data,
             };
           }
-          return localItem || getEmptyReportObject(year, month);
+          return getEmptyReportObject(year, month);
         });
       }
     } catch (e) {
-      console.warn('Failed to fetch from Supabase, loading local state:', e);
+      console.warn('Failed to fetch from Supabase:', e);
     }
   }
 
-  return localReports;
+  // Return clean empty 12 months array when empty on Supabase
+  return Array.from({ length: 12 }, (_, i) => getEmptyReportObject(year, i + 1));
 }
 
 // Save monthly report & data
@@ -401,7 +399,7 @@ export async function saveReportData(
     }
   }
 
-  return saveLocalReport(year, month, reportPatch, dataPatch);
+  return fetchReportsData(year);
 }
 
 function getEmptyReportObject(year: number, month: number): FullMonthlyReportData {
@@ -486,28 +484,8 @@ function getEmptyReportObject(year: number, month: number): FullMonthlyReportDat
 }
 
 export function getLocalReports(year: number): FullMonthlyReportData[] {
-  if (typeof window === 'undefined') return [];
-  // Clear old storage keys from previous cache
-  localStorage.removeItem(`tdc_energy_reports_v1_${year}`);
-  localStorage.removeItem(`tdc_energy_reports_v2_${year}`);
-  localStorage.removeItem(`tdc_energy_reports_v3_${year}`);
-  localStorage.removeItem(`tdc_energy_reports_v4_${year}`);
-
-  const stored = localStorage.getItem(`${STORAGE_KEY}_${year}`);
-  if (stored) {
-    try {
-      return JSON.parse(stored);
-    } catch { }
-  }
-
-  // Pure clean empty state for all 12 months ready for real production entry!
-  const cleanData: FullMonthlyReportData[] = Array.from({ length: 12 }, (_, i) => {
-    const month = i + 1;
-    return getEmptyReportObject(year, month);
-  });
-
-  localStorage.setItem(`${STORAGE_KEY}_${year}`, JSON.stringify(cleanData));
-  return cleanData;
+  // Pure clean empty state for all 12 months
+  return Array.from({ length: 12 }, (_, i) => getEmptyReportObject(year, i + 1));
 }
 
 export function saveLocalReport(
@@ -516,58 +494,16 @@ export function saveLocalReport(
   reportPatch: Partial<MonthlyReport>,
   dataPatch: Partial<ReportData>
 ): FullMonthlyReportData[] {
-  const current = getLocalReports(year);
-  const index = current.findIndex((item) => item.report.month === month);
-
-  if (index !== -1) {
-    current[index] = {
-      report: {
-        ...current[index].report,
-        ...reportPatch,
-        updated_at: new Date().toISOString(),
-      },
-      data: {
-        ...current[index].data,
-        ...dataPatch,
-        updated_at: new Date().toISOString(),
-      },
-    };
-  }
-
-  localStorage.setItem(`${STORAGE_KEY}_${year}`, JSON.stringify(current));
-  return current;
+  return Array.from({ length: 12 }, (_, i) => getEmptyReportObject(year, i + 1));
 }
 
 export function getCategorySubmissions(year: number): CategorySubmission[] {
-  if (typeof window === 'undefined') return (csvImportData as any)[year] || [];
-
-  const stored = localStorage.getItem(`tdc_category_submissions_${year}`);
-  if (stored !== null) {
-    try {
-      const parsed: CategorySubmission[] = JSON.parse(stored);
-      if (Array.isArray(parsed)) return parsed;
-    } catch { }
-  }
-
-  const baseData = (csvImportData as any)[year] || [];
-  localStorage.setItem(`tdc_category_submissions_${year}`, JSON.stringify(baseData));
-  return baseData;
+  return [];
 }
 
 export function saveCategorySubmission(
   submission: Omit<CategorySubmission, 'id' | 'created_at'>
 ): CategorySubmission[] {
-  if (typeof window === 'undefined') return [];
-  const current = getCategorySubmissions(submission.year);
-  const newRecord: CategorySubmission = {
-    ...submission,
-    id: `sub_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-    created_at: new Date().toISOString(),
-  };
-  const updated = [newRecord, ...current];
-  localStorage.setItem(`tdc_category_submissions_${submission.year}`, JSON.stringify(updated));
-
-  // Sync directly to Supabase monthly_reports & report_data tables
   if (isSupabaseConfigured && supabase) {
     saveReportData(
       submission.year,
@@ -576,15 +512,7 @@ export function saveCategorySubmission(
       submission.data
     );
   }
-
-  // Also merge into local report data
-  saveLocalReport(
-    submission.year,
-    submission.month,
-    { status: submission.status, submitted_category: submission.category_name },
-    submission.data
-  );
-  return updated;
+  return [];
 }
 
 export function updateCategorySubmissionStatus(
@@ -594,30 +522,5 @@ export function updateCategorySubmissionStatus(
   rejectReason?: string,
   approverName?: string
 ): CategorySubmission[] {
-  if (typeof window === 'undefined') return [];
-  const current = getCategorySubmissions(year);
-  const updated = current.map((item) => {
-    if (item.id === id) {
-      return {
-        ...item,
-        status,
-        reject_reason: rejectReason || null,
-        approver_name: approverName || item.approver_name,
-      };
-    }
-    return item;
-  });
-  localStorage.setItem(`tdc_category_submissions_${year}`, JSON.stringify(updated));
-
-  // Sync with report item
-  const target = current.find((item) => item.id === id);
-  if (target) {
-    saveLocalReport(
-      year,
-      target.month,
-      { status, reject_reason: rejectReason || null },
-      { ...target.data, approver_name: approverName || (target.data as any)?.approver_name }
-    );
-  }
-  return updated;
+  return [];
 }
