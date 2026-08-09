@@ -1993,7 +1993,8 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({
       )}
 
       {/* STICKY BOTTOM ACTION BAR */}
-      <div className="fixed bottom-0 left-0 md:left-64 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 md:px-8 py-3 flex flex-col sm:flex-row items-center justify-between gap-2.5 z-20 shadow-lg">
+      {!isReadOnlyMode && (
+        <div className="fixed bottom-0 left-0 md:left-64 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 md:px-8 py-3 flex flex-col sm:flex-row items-center justify-between gap-2.5 z-20 shadow-lg">
         <div className="flex items-center gap-2">
           {isFormLocked && (
             <div className="flex items-center gap-2 text-xs font-bold text-sky-700 bg-sky-50 px-3 py-1.5 rounded-lg border border-sky-200">
@@ -2076,6 +2077,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({
           )}
         </div>
       </div>
+      )}
       {/* REJECT MODAL DIALOG */}
       {rejectModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">

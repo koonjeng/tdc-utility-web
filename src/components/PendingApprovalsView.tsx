@@ -552,6 +552,7 @@ export const PendingApprovalsView: React.FC<PendingApprovalsViewProps> = ({
                 onRejectReport={() => {}}
                 initialCategory={viewModalSub.category_key}
                 initialData={viewModalSub.data}
+                isReadOnlyMode={true}
               />
             </div>
 
