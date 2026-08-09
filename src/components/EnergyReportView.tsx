@@ -468,7 +468,7 @@ export const EnergyReportView: React.FC<EnergyReportViewProps> = ({
       )}
 
       {/* TOP ACTION CONTROL BAR */}
-      <div className="w-full max-w-[210mm] bg-white p-4 rounded-2xl border border-slate-300 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="w-full max-w-[210mm] bg-white p-4 rounded-2xl border border-slate-300 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 no-print">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-sky-600 text-white flex items-center justify-center font-bold">
             <FileText className="w-5 h-5" />
@@ -538,9 +538,17 @@ export const EnergyReportView: React.FC<EnergyReportViewProps> = ({
           </div>
 
           <button
+            onClick={() => window.print()}
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer no-print"
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>พิมพ์รายงาน A4 (Print)</span>
+          </button>
+
+          <button
             onClick={() => handleExportPage('report-page-1', 1)}
             disabled={isExporting}
-            className="px-4 py-2 bg-sky-700 hover:bg-sky-600 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            className="px-4 py-2 bg-sky-700 hover:bg-sky-600 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 no-print"
           >
             <Download className="w-3.5 h-3.5" />
             <span>ดาวน์โหลด หน้า 1 (PNG)</span>
@@ -549,7 +557,7 @@ export const EnergyReportView: React.FC<EnergyReportViewProps> = ({
           <button
             onClick={() => handleExportPage('report-page-2', 2)}
             disabled={isExporting}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 no-print"
           >
             <Download className="w-3.5 h-3.5" />
             <span>ดาวน์โหลด หน้า 2 (PNG)</span>
@@ -560,7 +568,7 @@ export const EnergyReportView: React.FC<EnergyReportViewProps> = ({
       {/* A4 REPORT DOCUMENT CONTAINER PAGE 1 */}
       <div
         id="report-page-1"
-        className="w-[210mm] min-h-[297mm] bg-white shadow-2xl rounded-md overflow-hidden text-slate-800 font-sans flex flex-col justify-between border border-slate-300 relative text-[11px]"
+        className="w-[210mm] min-h-[297mm] bg-white shadow-2xl rounded-md overflow-hidden text-slate-800 font-sans flex flex-col justify-between border border-slate-300 relative text-[11px] print-page-break"
       >
         {/* HEADER BANNER */}
         <div className="bg-gradient-to-r from-slate-900 via-sky-900 to-sky-700 text-white p-5 flex items-center justify-between relative overflow-hidden">
