@@ -23,6 +23,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { UserRole } from '@/lib/types';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 export interface MaintenanceTask {
   id: string;
@@ -152,26 +153,50 @@ interface MaintenanceViewProps {
 }
 
 export const MaintenanceView: React.FC<MaintenanceViewProps> = ({ currentUser }) => {
-  const [tasks, setTasks] = useState<MaintenanceTask[]>(() => {
-    if (typeof window === 'undefined') return DEFAULT_TASKS;
-    try {
-      const saved = localStorage.getItem('tdc_maintenance_tasks');
-      if (saved) {
-        return JSON.parse(saved);
+  const [tasks, setTasks] = useState<MaintenanceTask[]>(DEFAULT_TASKS);
+  const [historyRecords, setHistoryRecords] = useState<MaintenanceHistoryRecord[]>([]);
+
+  // Sync PM Tasks & History directly from Supabase Database
+  useEffect(() => {
+    async function loadPMData() {
+      if (!isSupabaseConfigured || !supabase) return;
+      try {
+        const { data: dbTasks, error: tErr } = await supabase.from('maintenance_tasks').select('*');
+        if (!tErr && dbTasks && dbTasks.length > 0) {
+          setTasks(
+            dbTasks.map((t: any) => ({
+              id: t.id,
+              equipment: t.equipment,
+              taskName: t.task_name,
+              cycleDays: t.cycle_days,
+              lastDoneDate: t.last_done_date,
+              reporterName: t.reporter_name,
+              status: t.status,
+            }))
+          );
+        }
+
+        const { data: dbHist, error: hErr } = await supabase.from('maintenance_history').select('*').order('created_at', { ascending: false });
+        if (!hErr && dbHist) {
+          setHistoryRecords(
+            dbHist.map((h: any) => ({
+              id: h.id,
+              taskId: h.task_id,
+              equipment: h.equipment,
+              taskName: h.task_name,
+              doneDate: h.done_date,
+              reporterName: h.reporter_name,
+              status: h.status,
+              submittedAt: h.submitted_at || h.created_at,
+            }))
+          );
+        }
+      } catch (err) {
+        console.warn('Failed to load PM data from Supabase:', err);
       }
-    } catch {}
-    return DEFAULT_TASKS;
-  });
-
-  const [historyRecords, setHistoryRecords] = useState<MaintenanceHistoryRecord[]>(() => {
-    if (typeof window === 'undefined') return [];
-    try {
-      const saved = localStorage.getItem('tdc_maintenance_history');
-      if (saved) return JSON.parse(saved);
-    } catch {}
-    return [];
-  });
-
+    }
+    loadPMData();
+  }, []);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [notification, setNotification] = useState<string | null>(null);
@@ -184,19 +209,6 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({ currentUser })
 
   // History Modal State
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState<boolean>(false);
-
-  // Auto-save tasks and history to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('tdc_maintenance_tasks', JSON.stringify(tasks));
-    } catch {}
-  }, [tasks]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('tdc_maintenance_history', JSON.stringify(historyRecords));
-    } catch {}
-  }, [historyRecords]);
 
   const triggerNotify = (msg: string) => {
     setNotification(msg);
@@ -344,15 +356,50 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({ currentUser })
 
     setHistoryRecords((prev) => [newRecord, ...prev]);
 
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('maintenance_history').upsert({
+        id: newRecord.id,
+        task_id: newRecord.taskId,
+        equipment: newRecord.equipment,
+        task_name: newRecord.taskName,
+        done_date: newRecord.doneDate,
+        reporter_name: newRecord.reporterName,
+        status: newRecord.status,
+        submitted_at: newRecord.submittedAt,
+      }).then(({ error }) => {
+        if (error) console.warn('Supabase PM history upsert error:', error);
+      });
+    }
+
     // If auto approved (hasRole), update the task's lastDoneDate immediately
     if (isAutoApproved) {
       setTasks((prev) =>
         prev.map((t) =>
           t.id === targetTask.id
-            ? { ...t, lastDoneDate: selectedDoneDate, reporterName: reporterNameInput.trim(), status: 'approved' }
+            ? {
+                ...t,
+                lastDoneDate: selectedDoneDate,
+                reporterName: reporterNameInput.trim(),
+                status: 'approved',
+              }
             : t
         )
       );
+
+      if (isSupabaseConfigured && supabase) {
+        supabase.from('maintenance_tasks').upsert({
+          id: targetTask.id,
+          equipment: targetTask.equipment,
+          task_name: targetTask.taskName,
+          cycle_days: targetTask.cycleDays,
+          last_done_date: selectedDoneDate,
+          reporter_name: reporterNameInput.trim(),
+          status: 'approved',
+        }).then(({ error }) => {
+          if (error) console.warn('Supabase PM task update error:', error);
+        });
+      }
+
       triggerNotify(`อนุมัติและบันทึกการซ่อมบำรุง "${targetTask.equipment}" เรียบร้อยแล้ว`);
     } else {
       // Guest / Reporter -> Send to Pending Approvals queue

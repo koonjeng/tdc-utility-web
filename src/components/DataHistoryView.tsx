@@ -393,12 +393,7 @@ export const DataHistoryView: React.FC<DataHistoryViewProps> = ({
     window.location.reload();
   };
 
-  // Category Submissions
-  const categorySubmissions = useMemo(() => {
-    return getCategorySubmissions(selectedYear);
-  }, [selectedYear]);
-
-  // Combine monthly reports and category submissions
+  // Combine monthly reports
   const allDisplayItems = useMemo(() => {
     const items: Array<{
       id: string;
@@ -411,35 +406,23 @@ export const DataHistoryView: React.FC<DataHistoryViewProps> = ({
       data: Partial<ReportData>;
     }> = [];
 
-    // Add category submissions first
-    categorySubmissions.forEach((sub) => {
-      items.push({
-        id: sub.id,
-        month: sub.month,
-        report_date: sub.report_date,
-        status: sub.status,
-        reporter_name: sub.reporter_name,
-        approver_name: sub.approver_name || (sub.data as any)?.approver_name,
-        category_key: sub.category_key,
-        data: sub.data,
-      });
-    });
-
     // Add monthly reports
     reportsData.forEach((r) => {
-      items.push({
-        id: r.report.id,
-        month: r.report.month,
-        report_date: r.data.report_date || '',
-        status: r.report.status,
-        reporter_name: r.data.reporter_name || '',
-        approver_name: r.data.approver_name || '',
-        data: r.data,
-      });
+      if (r.report.status !== 'empty') {
+        items.push({
+          id: r.report.id,
+          month: r.report.month,
+          report_date: r.data.report_date || '',
+          status: r.report.status,
+          reporter_name: r.data.reporter_name || '',
+          approver_name: r.data.approver_name || '',
+          data: r.data,
+        });
+      }
     });
 
     return items;
-  }, [reportsData, categorySubmissions]);
+  }, [reportsData]);
 
   // Helper to check category data content
   const hasCategoryContent = (data: Partial<ReportData>, catKey: string): boolean => {
