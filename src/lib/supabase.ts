@@ -357,51 +357,44 @@ export async function saveReportData(
   if (isSupabaseConfigured && supabase) {
     try {
       const reportId = `report-${year}-${month}`;
+      console.log('Attempting Supabase upsert for:', reportId, reportPatch, dataPatch);
       const { data: reportRow, error: rError } = await supabase
         .from('monthly_reports')
-        .upsert(
-          {
-            id: reportId,
-            year,
-            month,
-            status: reportPatch.status || 'draft',
-            reject_reason: reportPatch.reject_reason || null,
-          },
-          { onConflict: 'year,month' }
-        )
+        .upsert({
+          id: reportId,
+          year,
+          month,
+          status: reportPatch.status || 'draft',
+          reject_reason: reportPatch.reject_reason || null,
+        })
         .select()
         .single();
 
-      if (!rError && reportRow) {
+      if (rError) {
+        console.error('Monthly reports upsert error:', rError);
+        alert(`Supabase Error: ${rError.message} (${rError.details || ''})`);
+      } else if (reportRow) {
         const cleanDataPatch = {
           ...dataPatch,
           report_id: reportRow.id,
           reporter_name: dataPatch.reporter_name || '',
           reporter_id: dataPatch.reporter_id || '',
           report_date: dataPatch.report_date || new Date().toISOString().split('T')[0],
-          production_cassava: Number(dataPatch.production_cassava) || 0,
-          production_modified: Number(dataPatch.production_modified) || 0,
-          hours_cassava: Number(dataPatch.hours_cassava) || 0,
-          hours_modified: Number(dataPatch.hours_modified) || 0,
-          electricity_kwh: Number(dataPatch.electricity_kwh) || 0,
-          electricity_baht: Number(dataPatch.electricity_baht) || 0,
-          renewable_biogas_m3: Number(dataPatch.renewable_biogas_m3) || 0,
-          renewable_solar_kwh: Number(dataPatch.renewable_solar_kwh) || 0,
-          fuel_oil_a_liter: Number(dataPatch.fuel_oil_a_liter) || 0,
-          fuel_oil_a_baht: Number(dataPatch.fuel_oil_a_baht) || 0,
         };
 
         const { error: dataErr } = await supabase.from('report_data').upsert(cleanDataPatch, { onConflict: 'report_id' });
         if (dataErr) {
-          console.warn('Report data upsert error:', dataErr);
+          console.error('Report data upsert error:', dataErr);
+          alert(`Supabase Data Error: ${dataErr.message}`);
+        } else {
+          console.log('Successfully saved to Supabase report_data!');
         }
-      } else if (rError) {
-        console.warn('Monthly reports upsert error:', rError);
       }
 
       return await fetchReportsData(year);
-    } catch (err) {
-      console.warn('Supabase save error:', err);
+    } catch (err: any) {
+      console.error('Supabase save exception:', err);
+      alert(`Supabase Exception: ${err?.message || err}`);
     }
   }
 
