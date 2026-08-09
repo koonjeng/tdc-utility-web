@@ -48,32 +48,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const [mobileOpen, setMobileOpen] = useState<boolean>(false);
 
-  const categoryPendingCount = React.useMemo(() => {
-    try {
-      let count = 0;
-      [2567, 2568, 2569, 2570].forEach((y) => {
-        const catSubs = getCategorySubmissions(y);
-        count += catSubs.filter((s) => s.status === 'pending').length;
-      });
-      return count;
-    } catch {
-      return 0;
-    }
-  }, [reportsData]);
-
-  const maintenancePendingCount = React.useMemo(() => {
-    try {
-      const saved = localStorage.getItem('tdc_maintenance_history');
-      if (saved) {
-        const history = JSON.parse(saved);
-        return history.filter((m: any) => m.status === 'pending').length;
-      }
-    } catch { }
-    return 0;
-  }, []);
-
   const monthlyPendingCount = reportsData.filter((r) => r.report.status === 'pending').length;
-  const pendingCount = categoryPendingCount + monthlyPendingCount + maintenancePendingCount;
+  const pendingCount = monthlyPendingCount;
 
   const hasRole = Boolean(currentUser && (currentUser.role === 'admin' || currentUser.role === 'approver'));
 
