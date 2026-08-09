@@ -55,11 +55,15 @@ export const PendingApprovalsView: React.FC<PendingApprovalsViewProps> = ({
     return maintRecords.filter((m) => m.status === 'pending');
   }, [maintRecords]);
 
+  const pendingMonthlyReports = useMemo(() => {
+    return reportsData.filter((r) => r.report.status === 'pending');
+  }, [reportsData]);
+
   const pendingSubmissions = useMemo(() => {
     return categorySubmissions.filter((s) => s.status === 'pending');
   }, [categorySubmissions]);
 
-  const totalPendingCount = pendingSubmissions.length + pendingMaintRecords.length;
+  const totalPendingCount = pendingSubmissions.length + pendingMaintRecords.length + pendingMonthlyReports.length;
 
   const handleApproveMaintRecord = (record: MaintenanceHistoryRecord) => {
     // 1. Update status in history
@@ -238,6 +242,69 @@ export const PendingApprovalsView: React.FC<PendingApprovalsViewProps> = ({
                     >
                       <BadgeCheck className="w-4 h-4" />
                       <span>อนุมัติ (Approve)</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          {pendingMonthlyReports.map((mReport) => {
+            const dateFormatted = mReport.data.report_date ? mReport.data.report_date.split('-').reverse().join('/') : '-';
+            const metrics = calculateMetrics(mReport.data);
+
+            return (
+              <div
+                key={mReport.report.id}
+                className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-all border-l-4 border-l-amber-500"
+              >
+                <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 font-black text-xs flex items-center justify-center shadow-xs">
+                      {MONTH_NAMES_TH[mReport.report.month - 1].substring(0, 3)}
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-base text-white flex items-center gap-2">
+                        <span>รายงานประจำเดือน {MONTH_NAMES_TH[mReport.report.month - 1]} พ.ศ. {mReport.report.year}</span>
+                      </h3>
+                      <p className="text-xs text-slate-300 flex items-center gap-2 mt-0.5">
+                        <User className="w-3.5 h-3.5 text-amber-400" />
+                        <span>ผู้ส่งรายงาน: {mReport.data.reporter_name || 'ไม่ระบุชื่อ'}</span>
+                        <span>•</span>
+                        <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                        <span>วันที่ลงข้อมูล: {dateFormatted}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <span className="px-3 py-1 bg-amber-500/20 text-amber-300 rounded-full text-xs font-bold border border-amber-500/40 flex items-center gap-1.5 animate-pulse">
+                    <Clock className="w-3.5 h-3.5 text-amber-400" />
+                    <span>รออนุมัติ</span>
+                  </span>
+                </div>
+
+                <div className="p-5 bg-slate-50/60 border-b border-slate-100 flex items-center justify-between">
+                  <div className="space-y-1">
+                    <span className="text-xs text-slate-500 font-semibold">สรุปภาพรวม:</span>
+                    <p className="text-sm font-bold text-slate-800">
+                      ผลิตรวม {metrics.totalProductionTons.toLocaleString('th-TH')} ตัน | ใช้ไฟฟ้า {metrics.elecGrandTotalKwh.toLocaleString('th-TH')} kWh
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => onInspectReport(mReport.report.month)}
+                      className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <FileText className="w-4 h-4" />
+                      <span>ตรวจดูข้อมูล</span>
+                    </button>
+
+                    <button
+                      onClick={() => onApproveReport(mReport.report.month)}
+                      className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md shadow-emerald-600/20 transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <BadgeCheck className="w-4 h-4" />
+                      <span>อนุมัติรายงาน</span>
                     </button>
                   </div>
                 </div>
