@@ -141,7 +141,16 @@ export const EnergyReportView: React.FC<EnergyReportViewProps> = ({
 
         allSubs.forEach((sub) => {
           const subData = sub.data || {};
-          mergedData = { ...mergedData, ...subData };
+          // Accumulate numeric fields instead of overwriting
+          for (const key of Object.keys(subData)) {
+            const val = (subData as any)[key];
+            if (val === undefined || val === null || val === '') continue;
+            if (typeof val === 'number') {
+              (mergedData as any)[key] = (Number((mergedData as any)[key]) || 0) + val;
+            } else {
+              (mergedData as any)[key] = val;
+            }
+          }
 
           const m1 = (Number(subData.elec_ms3_ms1_tf_on_peak) || 0) + (Number(subData.elec_ms3_ms1_tf_off_peak) || 0) || Number(subData.elec_meter1_ms1_ms3_tf) || 0;
           const m2 = (Number(subData.elec_utl_on_peak) || 0) + (Number(subData.elec_utl_off_peak) || 0) || Number(subData.elec_meter2_utl) || 0;
@@ -250,7 +259,16 @@ export const EnergyReportView: React.FC<EnergyReportViewProps> = ({
 
       catSubs.forEach((sub) => {
         const subData = sub.data || {};
-        mergedData = { ...mergedData, ...subData };
+        // Accumulate numeric fields instead of overwriting
+        for (const key of Object.keys(subData)) {
+          const val = (subData as any)[key];
+          if (val === undefined || val === null || val === '') continue;
+          if (typeof val === 'number') {
+            (mergedData as any)[key] = (Number((mergedData as any)[key]) || 0) + val;
+          } else {
+            (mergedData as any)[key] = val;
+          }
+        }
 
         const m1 = (Number(subData.elec_ms3_ms1_tf_on_peak) || 0) + (Number(subData.elec_ms3_ms1_tf_off_peak) || 0) || Number(subData.elec_meter1_ms1_ms3_tf) || 0;
         const m2 = (Number(subData.elec_utl_on_peak) || 0) + (Number(subData.elec_utl_off_peak) || 0) || Number(subData.elec_meter2_utl) || 0;
